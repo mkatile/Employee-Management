@@ -32,9 +32,15 @@ function startApp() {
       'Add a department',
       'Add a role',
       'Add an employee',
+      'Delete a department',
+      'Delete a role',
+      'Delete an employee',
+      'Update employee manager',
+      'View employees by department',
       'Update an employee role',
       'Exit'
     ]
+
   }).then(answer => {
     switch (answer.action) {
       case 'View all departments':
@@ -55,6 +61,21 @@ function startApp() {
       case 'Add an employee':
         addEmployee();
         break;
+      case 'Delete a department':
+        deleteDepartment();
+        break;
+      case 'Delete a role':
+        deleteRole();
+        break;
+      case 'Delete an employee':
+        deleteEmployee();
+        break;
+      case 'Update employee manager':
+        updateEmployeeManager();
+        break;
+      case 'View employees by department':
+        viewEmployeesByDepartment();
+        break;
       case 'Update an employee role':
         updateEmployeeRole();
         break;
@@ -64,6 +85,7 @@ function startApp() {
     }
   });
 }
+
 
 // Function to view all departments
 function viewAllDepartments() {
@@ -228,48 +250,144 @@ function addEmployee() {
   });
 }
 
-// Function to update an employee role
-function updateEmployeeRole() {
-  client.query('SELECT * FROM employee', (err, res) => {
-    if (err) {
-      console.error('Error executing query', err.stack);
-      return;
-    }
-
-    const employees = res.rows.map(row => ({ name: `${row.first_name} ${row.last_name}`, value: row.id }));
-
-    client.query('SELECT * FROM role', (err, res) => {
+function deleteDepartment() {
+  inquirer.prompt({
+    name: 'name',
+    type: 'input',
+    message: 'Enter the name of the department to delete:'
+  }).then(answer => {
+    client.query('DELETE FROM department WHERE name = $1', [answer.name], (err, res) => {
       if (err) {
         console.error('Error executing query', err.stack);
-        return;
+      } else if (res.rowCount === 0) {
+        console.log('No department found with the given name.');
+      } else {
+        console.log('Department deleted successfully!');
       }
+      startApp(); // Ensure startApp function is defined
+    });
+  });
+}
 
-      const roles = res.rows.map(row => ({ name: row.title, value: row.id }));
+function deleteRole() {
+  inquirer.prompt({
+    name: 'title',
+    type: 'input',
+    message: 'Enter the title of the role to delete:'
+  }).then(answer => {
+    client.query('DELETE FROM role WHERE title = $1', [answer.title], (err, res) => {
+      if (err) {
+        console.error('Error executing query', err.stack);
+      } else if (res.rowCount === 0) {
+        console.log('No role found with the given title.');
+      } else {
+        console.log('Role deleted successfully!');
+      }
+      startApp();
+    });
+  });
+}
+  
+function deleteEmployee() {
+  inquirer.prompt([
+    {
+      name: 'first_name',
+      type: 'input',
+      message: 'Enter the first name of the employee:'
+    },
+    {
+      name: 'last_name',
+      type: 'input',
+      message: 'Enter the last name of the employee:'
+    },
+    {
+      name: 'role_id',
+      type: 'list',
+      message: 'Select the role for the employee:',
+      choices: roles
+    },
+    {
+      name: 'manager_id',
+      type: 'list',
+      message: 'Select the manager for the employee:',
+      choices: managers
+    }
+  ]).then(answers => {
+  const { first_name, last_name, role_id, manager_id } = answers;
+  client.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)', [first_name, last_name, role_id, manager_id], (err, res) => {
+      if (err) {
+        console.error('Error executing query', err.stack);
+      } else if (res.rowCount === 0) {
+        console.log('No employee found with the given name.');
+      } else {
+        console.log('Employee deleted successfully!');
+      }
+      startApp();
+    });
+  });
+}
 
-      inquirer.prompt([
-        {
-          name: 'employee_id',
-          type: 'list',
-          message: 'Select the employee whose role you want to update:',
-          choices: employees
-        },
-        {
-          name: 'role_id',
-          type: 'list',
-          message: 'Select the new role for the employee:',
-          choices: roles
+
+// Function to update employee manager
+function updateEmployeeManager() {
+  inquirer.prompt({
+    name: 'employeeId',
+    type: 'input',
+    message: 'Enter the ID of the employee whose manager you want to update:'
+  }).then(employeeAnswer => {
+    const employeeId = employeeAnswer.employeeId;
+
+    inquirer.prompt({
+      name: 'newManagerId',
+      type: 'input',
+      message: 'Enter the ID of the new manager:'
+    }).then(managerAnswer => {
+      const newManagerId = managerAnswer.newManagerId;
+
+      const query = `
+        UPDATE employee
+        SET manager_id = $1
+        WHERE id = $2;
+      `;
+      client.query(query, [newManagerId, employeeId], (err, res) => {
+        if (err) {
+          console.error('Error executing query', err.stack);
+        } else {
+          console.log('Employee manager updated successfully!');
         }
-      ]).then(answers => {
-        const { employee_id, role_id } = answers;
-        client.query('UPDATE employee SET role_id = $1 WHERE id = $2', [role_id, employee_id], (err, res) => {
-          if (err) {
-            console.error('Error executing query', err.stack);
-          } else {
-            console.log('Employee role updated successfully!');
-            startApp();
-          }
-        });
+        startApp(); // Ensure startApp function is defined
       });
+    });
+  });
+}
+
+    
+
+function viewEmployeesByDepartment () {
+  inquirer.prompt({
+    name: 'departmentName',
+    type: 'input',
+    message: 'Enter the name of the department to view employees:'
+  }).then(answer => {
+    const department = answer.department;
+    
+    // Execute SQL query to retrieve employees by department name
+    const query = `
+      SELECT e.id, e.name AS employee_name, r.name AS role_name, d.name AS department_name
+      FROM employee e
+      INNER JOIN role r ON e.role_id = r.id
+      INNER JOIN department d ON r.department_id = d.id
+      WHERE d.name = $1;
+    `;
+
+    client.query(query, [department], (err, res) => {
+      if (err) {
+        console.error('Error executing query', err.stack);
+      } else {
+        // Display the result
+        console.table(res.rows);
+      }
+      startApp(); // Ensure startApp function is defined
     });
   });
 }

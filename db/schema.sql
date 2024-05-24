@@ -4,7 +4,7 @@ CREATE DATABASE employees_db;
 USE employees_db;
 
 
-CREATE TABLE department (
+CREATE TABLE departments (
     id SERIAL PRIMARY KEY,
     name VARCHAR(30) UNIQUE NOT NULL
 );
