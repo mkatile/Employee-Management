@@ -268,7 +268,40 @@ function deleteDepartment() {
     });
   });
 }
+// Function to delete a role
+function deleteRole() {
+  // Retrieve all roles from the database
+  client.query('SELECT * FROM role', (err, res) => {
+    if (err) {
+      console.error('Error executing query', err.stack);
+      return;
+    }
 
+    // Map the roles to an array of choices for the user
+    const roles = res.rows.map(row => ({ name: row.title, value: row.id }));
+
+    // Prompt the user to select a role to delete
+    inquirer.prompt({
+      name: 'roleId',
+      type: 'list',
+      message: 'Select the role to delete:',
+      choices: roles
+    }).then(answer => {
+      // Execute the delete query
+      client.query('DELETE FROM role WHERE id = $1', [answer.roleId], (err, res) => {
+        if (err) {
+          console.error('Error executing query', err.stack);
+        } else if (res.rowCount === 0) {
+          console.log('No role found with the given ID.');
+        } else {
+          console.log('Role deleted successfully!');
+        }
+        startApp(); // Call startApp to return to the main menu
+      });
+    });
+  });
+}
+// Function to delete an employee
 function deleteEmployee() {
   client.query('SELECT * FROM employee', (err, res) => {
     if (err) {
@@ -276,7 +309,12 @@ function deleteEmployee() {
       return;
     }
 
-    const employees = res.rows.map(row => ({ name: `${row.first_name} ${row.last_name}`, value: row.id }));
+    const employees = res.rows.map(row => ({
+      name: `${row.first_name} ${row.last_name}`,
+      value: row.id
+    }));
+
+    employees.unshift({ name: 'Cancel', value: null });
 
     inquirer.prompt({
       name: 'employeeId',
@@ -284,6 +322,12 @@ function deleteEmployee() {
       message: 'Select the employee to delete:',
       choices: employees
     }).then(answer => {
+      if (answer.employeeId === null) {
+        console.log('Operation canceled.');
+        startApp();
+        return;
+      }
+
       client.query('DELETE FROM employee WHERE id = $1', [answer.employeeId], (err, res) => {
         if (err) {
           console.error('Error executing query', err.stack);
@@ -297,46 +341,6 @@ function deleteEmployee() {
     });
   });
 }
-  
-function deleteEmployee() {
-  inquirer.prompt([
-    {
-      name: 'first_name',
-      type: 'input',
-      message: 'Enter the first name of the employee:'
-    },
-    {
-      name: 'last_name',
-      type: 'input',
-      message: 'Enter the last name of the employee:'
-    },
-    {
-      name: 'role_id',
-      type: 'list',
-      message: 'Select the role for the employee:',
-      choices: roles
-    },
-    {
-      name: 'manager_id',
-      type: 'list',
-      message: 'Select the manager for the employee:',
-      choices: managers
-    }
-  ]).then(answers => {
-  const { first_name, last_name, role_id, manager_id } = answers;
-  client.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)', [first_name, last_name, role_id, manager_id], (err, res) => {
-      if (err) {
-        console.error('Error executing query', err.stack);
-      } else if (res.rowCount === 0) {
-        console.log('No employee found with the given name.');
-      } else {
-        console.log('Employee deleted successfully!');
-      }
-      startApp();
-    });
-  });
-}
-
 
 // Function to update employee manager
 function updateEmployeeManager() {
