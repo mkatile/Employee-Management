@@ -1,5 +1,5 @@
 -- Use the database
-USE employees_db;
+\c employees_db;
 
 -- Insert sample data into the departments table
 INSERT INTO departments (name) 
@@ -29,4 +29,6 @@ VALUES  ('Joel', 'Iles', 1, NULL),
         ('Florence', 'Kouame', 3, NULL),
         ('Jihanna', 'Jones', 4, 3),
         ('Olivia', 'Pope', 5, 3),
-       
+        ('Maria', 'Dia', 6, NULL),
+        ('Jules', 'Cesar', 7, 6),
+        ('John', 'Doe', 9, NULL);

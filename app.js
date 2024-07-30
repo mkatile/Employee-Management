@@ -4,7 +4,7 @@ const { Client } = require('pg');
 const client = new Client({
     host: 'localhost',
     user: 'mahadi',
-    password: 'H@diaratoun',
+    password: 'Hadiaratoun',
     database: 'employees_db',
     port: 5432,
 });
@@ -269,21 +269,31 @@ function deleteDepartment() {
   });
 }
 
-function deleteRole() {
-  inquirer.prompt({
-    name: 'title',
-    type: 'input',
-    message: 'Enter the title of the role to delete:'
-  }).then(answer => {
-    client.query('DELETE FROM role WHERE title = $1', [answer.title], (err, res) => {
-      if (err) {
-        console.error('Error executing query', err.stack);
-      } else if (res.rowCount === 0) {
-        console.log('No role found with the given title.');
-      } else {
-        console.log('Role deleted successfully!');
-      }
-      startApp();
+function deleteEmployee() {
+  client.query('SELECT * FROM employee', (err, res) => {
+    if (err) {
+      console.error('Error executing query', err.stack);
+      return;
+    }
+
+    const employees = res.rows.map(row => ({ name: `${row.first_name} ${row.last_name}`, value: row.id }));
+
+    inquirer.prompt({
+      name: 'employeeId',
+      type: 'list',
+      message: 'Select the employee to delete:',
+      choices: employees
+    }).then(answer => {
+      client.query('DELETE FROM employee WHERE id = $1', [answer.employeeId], (err, res) => {
+        if (err) {
+          console.error('Error executing query', err.stack);
+        } else if (res.rowCount === 0) {
+          console.log('No employee found with the given ID.');
+        } else {
+          console.log('Employee deleted successfully!');
+        }
+        startApp();
+      });
     });
   });
 }
@@ -360,34 +370,30 @@ function updateEmployeeManager() {
     });
   });
 }
-
-    
-
-function viewEmployeesByDepartment () {
+function viewEmployeesByDepartment() {
   inquirer.prompt({
     name: 'departmentName',
     type: 'input',
     message: 'Enter the name of the department to view employees:'
   }).then(answer => {
-    const department = answer.department;
-    
-    // Execute SQL query to retrieve employees by department name
+    const departmentName = answer.departmentName;
+
     const query = `
-      SELECT e.id, e.name AS employee_name, r.name AS role_name, d.name AS department_name
+      SELECT e.id, e.first_name, e.last_name, r.title AS role_title, d.name AS department_name
       FROM employee e
       INNER JOIN role r ON e.role_id = r.id
       INNER JOIN department d ON r.department_id = d.id
       WHERE d.name = $1;
     `;
 
-    client.query(query, [department], (err, res) => {
+    client.query(query, [departmentName], (err, res) => {
       if (err) {
         console.error('Error executing query', err.stack);
       } else {
-        // Display the result
         console.table(res.rows);
       }
-      startApp(); // Ensure startApp function is defined
+      startApp();
     });
   });
 }
+
