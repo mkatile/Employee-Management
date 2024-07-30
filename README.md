@@ -40,4 +40,4 @@ We will use command line to run the app
 node app.js
 ```
 
-The application won't be deployed here is the [link](https://drive.google.com/file/d/1lhibgNLSA2dsa-z5NMUUlsQcZt3dDyFp/view?usp=sharing) to the walkthrough video. 
+The application won't be deployed here is the [link](https://drive.google.com/file/d/1kZe9p2RNuVxZ9RWQx5ZqrGdGk0KMKA7w/view?usp=sharing) to the walkthrough video. 
